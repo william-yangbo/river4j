@@ -1,4 +1,4 @@
-package com.riverqueue.river.internal.baseservice;
+package io.river4j.internal.baseservice;
 
 import java.time.Duration;
 import java.time.Instant;
