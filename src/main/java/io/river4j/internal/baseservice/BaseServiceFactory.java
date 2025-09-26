@@ -1,6 +1,5 @@
 package io.river4j.internal.baseservice;
 
-import java.lang.reflect.Type;
 import java.util.Objects;
 
 /**

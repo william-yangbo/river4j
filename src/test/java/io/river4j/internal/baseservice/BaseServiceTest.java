@@ -238,6 +238,16 @@ class BaseServiceTest {
         assertTrue(future.isDone(), "Async sleep should complete immediately when sleep is disabled");
         assertDoesNotThrow(() -> future.get(), "Future should complete successfully");
     }
+
+    // Helper classes for testing
+    public static class MyService implements BaseServiceProvider {
+        private final BaseService baseService = new BaseService();
+        
+        @Override
+        public BaseService getBaseService() {
+            return baseService;
+        }
+    }
     
     /**
      * Creates test archetype - mirrors the Go archetype() function
