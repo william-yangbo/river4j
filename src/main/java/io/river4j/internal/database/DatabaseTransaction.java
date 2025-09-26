@@ -39,6 +39,13 @@ public class DatabaseTransaction {
     }
     
     /**
+     * Get migration DAO (alias for migrations).
+     */
+    public MigrationDao getMigrationDao() {
+        return migrations();
+    }
+    
+    /**
      * Get direct handle for custom operations.
      */
     public Handle handle() {

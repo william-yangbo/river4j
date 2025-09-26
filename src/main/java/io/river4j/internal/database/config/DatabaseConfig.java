@@ -83,7 +83,7 @@ public class DatabaseConfig {
         jdbi.registerRowMapper(new RiverMigrationRowMapper());
         
         jdbi.registerColumnMapper(new JobStateColumnMapper());
-        jdbi.registerColumnMapper(new PostgresArrayColumnMapper<>());
+        jdbi.registerColumnMapper(String[].class, new PostgresArrayColumnMapper<String>());
         
         jdbi.registerArgument(new JobStateArgumentFactory());
         jdbi.registerArgument(new PostgresArrayArgumentFactory());

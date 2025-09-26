@@ -3,14 +3,10 @@ package io.river4j.internal.database;
 import io.river4j.internal.database.model.JobState;
 import io.river4j.internal.database.model.RiverJob;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Test class for database layer functionality.

@@ -14,10 +14,12 @@ public class RiverMigrationRowMapper implements RowMapper<RiverMigration> {
     
     @Override
     public RiverMigration map(ResultSet rs, StatementContext ctx) throws SQLException {
+        Long id = rs.getObject("id", Long.class);
         return new RiverMigration(
-            rs.getLong("id"),
-            rs.getTimestamp("created_at").toInstant(),
-            rs.getLong("version")
+            id,
+            rs.getLong("version"),
+            rs.getString("name"),
+            rs.getTimestamp("created_at").toInstant()
         );
     }
 }

@@ -35,16 +35,36 @@ public interface MigrationDao extends SqlObject {
      * Corresponds to MigrationInsert in Go.
      */
     @SqlUpdate("""
-        INSERT INTO river_migration (created_at, version)
-        VALUES (:createdAt, :version)
+        INSERT INTO river_migration (version, name, created_at)
+        VALUES (:version, :name, :createdAt)
         """)
-    int insert(@Bind("createdAt") Instant createdAt, @Bind("version") long version);
+    int insert(@Bind("version") long version, @Bind("name") String name, @Bind("createdAt") Instant createdAt);
+    
+    /**
+     * Insert new migration from model.
+     */
+    default int insert(RiverMigration migration) {
+        return insert(migration.version(), migration.name(), migration.createdAt());
+    }
 
     /**
      * Get latest migration version.
      */
     @SqlQuery("SELECT version FROM river_migration ORDER BY version DESC LIMIT 1")
     Optional<Long> getLatestVersion();
+    
+    /**
+     * Get current migration version (same as getLatestVersion but returns int).
+     */
+    default Optional<Integer> getCurrentVersion() {
+        return getLatestVersion().map(Long::intValue);
+    }
+    
+    /**
+     * Get applied migrations in reverse order (for rollback).
+     */
+    @SqlQuery("SELECT * FROM river_migration ORDER BY version DESC")
+    List<RiverMigration> getAppliedMigrations();
 
     /**
      * Delete migration by version.

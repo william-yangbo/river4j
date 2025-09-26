@@ -84,7 +84,7 @@ public class DatabaseUsageExample {
         // Transaction with return value
         Long jobId = db.inTransaction(tx -> {
             // Insert job within transaction
-            int inserted = tx.jobs().insert(
+            tx.jobs().insert(
                 "ProcessingJob",
                 "{\"data\":\"important\"}".getBytes(),
                 "critical",

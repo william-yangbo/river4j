@@ -7,9 +7,10 @@ import java.time.Instant;
  * Corresponds to river_migration table in PostgreSQL.
  */
 public record RiverMigration(
-    long id,
-    Instant createdAt,
-    long version
+    Long id,
+    long version,
+    String name,
+    Instant createdAt
 ) {
     public RiverMigration {
         if (createdAt == null) {
@@ -17,6 +18,9 @@ public record RiverMigration(
         }
         if (version < 0) {
             throw new IllegalArgumentException("Version must be non-negative");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Migration name cannot be null or blank");
         }
     }
 }
