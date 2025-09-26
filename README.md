@@ -46,10 +46,15 @@ The baseservice module has been successfully migrated from Go to Java21, maintai
 ## Usage Example
 
 ```java
+### Usage Example
+
+```java
+import io.river4j.internal.baseservice.*;
+
 // Create service archetype
 ServiceArchetype archetype = ServiceArchetype.builder()
     .disableSleep(false)
-    .logger(LoggerFactory.getLogger(MyService.class))
+    .logger(Logger.getLogger(MyService.class.getName()))
     .timeProvider(Instant::now)
     .build();
 
@@ -75,6 +80,7 @@ public class MyService implements BaseServiceProvider {
         baseService.getLogger().info("Work completed");
     }
 }
+```
 ```
 
 ## Testing
@@ -117,7 +123,7 @@ mvn test
 
 ### Run Example
 ```bash
-mvn exec:java -Dexec.mainClass="com.riverqueue.river.internal.baseservice.BaseServiceExample"
+mvn exec:java -Dexec.mainClass="io.river4j.internal.baseservice.BaseServiceExample"
 ```
 
 ## Migration Benefits
