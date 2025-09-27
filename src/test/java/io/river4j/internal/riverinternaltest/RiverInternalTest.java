@@ -51,9 +51,25 @@ public class RiverInternalTest {
     
     /**
      * Creates a dedicated test database for isolated testing.
+     * Like Go's riverinternaltest.TestDB(), this returns a database with only base migrations applied.
+     * The test will set custom migrations using setMigrations().
      */
     public static DatabaseManager testDB() {
-        return testDatabaseManager();
+        DatabaseManager dbManager = testDatabaseManager();
+        
+        // Apply ONLY base migrations (versions 1,2) like Go's riverinternaltest.TestDB() does
+        // This ensures the database starts at version 2, ready for test migrations (3,4)
+        try {
+            io.river4j.internal.dbmigrate.Migrator migrator = 
+                new io.river4j.internal.dbmigrate.Migrator(dbManager, "io/river4j/internal/dbmigrate");
+            // This applies only the base migrations (1,2), not test migrations
+            migrator.migrateUp(new io.river4j.internal.dbmigrate.MigrateOptions());
+        } catch (Exception e) {
+            logger.warning("Failed to apply base migrations in testDB(): " + e.getMessage());
+            // Continue - might be ok for some tests
+        }
+        
+        return dbManager;
     }
     
     /**

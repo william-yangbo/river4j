@@ -26,7 +26,7 @@ public class Migrator {
     
     private final DatabaseManager databaseManager;
     private final String migrationsPath;
-    private final Map<Integer, MigrationBundle> migrations;
+    private Map<Integer, MigrationBundle> migrations;
     
     /**
      * Create a new Migrator instance
@@ -58,7 +58,7 @@ public class Migrator {
         List<MigrationBundle> pending = getPendingMigrations(currentVersion);
         if (pending.isEmpty()) {
             logger.info("Database is up to date");
-            return new MigrateResult(currentVersion, Collections.emptyList());
+            return new MigrateResult(Collections.emptyList());
         }
         
         // Apply max steps limit
@@ -69,7 +69,7 @@ public class Migrator {
         
         return databaseManager.inTransaction(tx -> {
             
-            List<MigrationBundle> applied = new ArrayList<>();
+            List<Long> appliedVersions = new ArrayList<>();
             for (MigrationBundle migration : toApply) {
                 logger.info("Applying migration {} - {}", migration.version(), migration.name());
                 
@@ -80,7 +80,7 @@ public class Migrator {
                     
                     // Record the migration
                     recordMigration(tx, migration);
-                    applied.add(migration);
+                    appliedVersions.add(migration.version());
                     
                     logger.info("Successfully applied migration {}", migration.version());
                 } catch (Exception e) {
@@ -89,10 +89,7 @@ public class Migrator {
                 }
             }
             
-            int finalVersion = applied.isEmpty() ? currentVersion : 
-                (int) applied.get(applied.size() - 1).version();
-            
-            return new MigrateResult(finalVersion, applied);
+            return new MigrateResult(appliedVersions);
         });
     }
     
@@ -112,7 +109,7 @@ public class Migrator {
             List<RiverMigration> applied = getAppliedMigrations(tx);
             if (applied.isEmpty()) {
                 logger.info("No migrations to roll back");
-                return new MigrateResult(0, Collections.emptyList());
+                return new MigrateResult(Collections.emptyList());
             }
             
             // Apply max steps limit
@@ -121,7 +118,7 @@ public class Migrator {
             
             logger.info("Rolling back {} migration(s)", toRollback.size());
             
-            List<MigrationBundle> rolledBack = new ArrayList<>();
+            List<Long> rolledBackVersions = new ArrayList<>();
             for (RiverMigration migration : toRollback) {
                 logger.info("Rolling back migration {} - {}", migration.version(), migration.name());
                 
@@ -148,9 +145,8 @@ public class Migrator {
                         removeMigrationRecord(tx, migration.version());
                     }
                     
-                    // Create bundle for result
-                    MigrationBundle bundle = new MigrationBundle(migration.version(), migration.name());
-                    rolledBack.add(bundle);
+                    // Add version to result - Go returns versions in order they were rolled back
+                    rolledBackVersions.add(migration.version());
                     
                     logger.info("Successfully rolled back migration {}", migration.version());
                 } catch (Exception e) {
@@ -159,24 +155,7 @@ public class Migrator {
                 }
             }
             
-            // Calculate final version based on what remains after rollback
-            // If we rolled back all migrations (including migration 1), version should be 0
-            // Otherwise, get the current version after the rollback operations
-            int finalVersion = 0;
-            if (!rolledBack.isEmpty()) {
-                long lowestRolledBackVersion = rolledBack.stream()
-                    .mapToLong(MigrationBundle::version)
-                    .min()
-                    .orElse(0);
-                if (lowestRolledBackVersion > 1) {
-                    // We didn't roll back to the beginning, get the actual current version
-                    finalVersion = getCurrentVersion(tx);
-                } else {
-                    // We rolled back to the beginning (including migration 1), so version is 0
-                    finalVersion = 0;
-                }
-            }
-            return new MigrateResult(finalVersion, rolledBack);
+            return new MigrateResult(rolledBackVersions);
         });
     }
     
@@ -218,6 +197,13 @@ public class Migrator {
         return result;
     }
     
+    /**
+     * Set custom migrations for testing - allows overriding the default migration set
+     */
+    public void setMigrations(Map<Integer, MigrationBundle> testMigrations) {
+        this.migrations = testMigrations;
+    }
+    
     private int getCurrentVersion(DatabaseTransaction tx) {
         try {
             return tx.getMigrationDao().getCurrentVersion().orElse(0);
@@ -246,6 +232,13 @@ public class Migrator {
     }
     
     private String loadMigrationSql(long version, String name, boolean up) {
+        // First check if we have inline SQL (for testing)
+        MigrationBundle bundle = migrations.get((int) version);
+        if (bundle != null && bundle.hasInlineSql()) {
+            return up ? bundle.upSql() : bundle.downSql();
+        }
+        
+        // Fall back to file-based migration loading
         String direction = up ? "up" : "down";
         String filename = String.format("%03d_%s.%s.sql", (int) version, name, direction);
         String resourcePath = migrationsPath + filename;
@@ -275,18 +268,21 @@ public class Migrator {
     }
     
     /**
-     * Result of a migration operation
+     * Result of a migration operation - matches Go's MigrateResult structure
      */
     public record MigrateResult(
-        int finalVersion,
-        List<MigrationBundle> migrations
+        List<Long> versions
     ) {
         public boolean hasChanges() {
-            return !migrations.isEmpty();
+            return !versions.isEmpty();
         }
         
         public int getStepsApplied() {
-            return migrations.size();
+            return versions.size();
+        }
+        
+        public int getFinalVersion() {
+            return versions.isEmpty() ? 0 : versions.get(versions.size() - 1).intValue();
         }
     }
     

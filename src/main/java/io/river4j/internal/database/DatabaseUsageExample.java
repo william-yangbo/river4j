@@ -1,6 +1,5 @@
 package io.river4j.internal.database;
 
-import io.river4j.internal.database.model.JobState;
 import io.river4j.internal.database.model.RiverJob;
 
 import java.time.Instant;
